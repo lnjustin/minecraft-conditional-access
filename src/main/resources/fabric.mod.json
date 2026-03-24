@@ -1,0 +1,32 @@
+{
+	"schemaVersion": 1,
+	"id": "conditional-access",
+	"version": "${version}",
+	"name": "Conditional Access",
+	"description": "Restrict joins based on whitelist presence",
+	"authors": [
+		"lnjustin"
+	],
+	"contact": {
+		"homepage": "https://fabricmc.net/"
+	},
+	"license": "CC0-1.0",
+	"icon": "assets/conditional-access/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"lnjustin.conditionalaccess.ConditionalAccess"
+		],
+		"client": [
+			"lnjustin.conditionalaccess.ConditionalAccessClient"
+		]
+	},
+	"mixins": [
+	],
+	"depends": {
+		"fabricloader": ">=0.18.4",
+		"minecraft": "~1.21.11",
+		"java": ">=21",
+		"fabric-api": "*"
+	}
+}
