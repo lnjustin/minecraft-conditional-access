@@ -79,8 +79,12 @@ public class ConditionalAccess implements ModInitializer {
 				return;
 			}
 
-			LOGGER.info("Disconnect detected for {}. Rechecking conditional access state", playerName);
-			updateGracePeriodState(server, "player disconnect");
+			LOGGER.info("Disconnect detected for {}. Scheduling conditional access recheck", playerName);
+
+			server.execute(() -> {
+				// This runs on next tick after player removal
+				updateGracePeriodState(server, "player disconnect");
+			});
 		});
 
 		ServerTickEvents.END_SERVER_TICK.register(server -> {
