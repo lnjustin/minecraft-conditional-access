@@ -34,6 +34,7 @@ public class ConditionalAccess implements ModInitializer {
 
 	private static boolean enabled = true;
 	private static int graceDeadlineTick = -1;
+	private static boolean pendingRecheck = false;
 
 	@Override
 	public void onInitialize() {
@@ -73,22 +74,24 @@ public class ConditionalAccess implements ModInitializer {
 		});
 
 		ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
+			if (!enabled) return;
+
 			String playerName = new NameAndId(handler.getPlayer().getGameProfile()).name();
+			LOGGER.info("Disconnect detected for {}. Scheduling recheck next tick", playerName);
 
-			if (!enabled) {
-				return;
-			}
-
-			LOGGER.info("Disconnect detected for {}. Scheduling conditional access recheck", playerName);
-
-			server.execute(() -> {
-				// This runs on next tick after player removal
-				updateGracePeriodState(server, "player disconnect");
-			});
+			pendingRecheck = true;
 		});
 
 		ServerTickEvents.END_SERVER_TICK.register(server -> {
-			if (!enabled || graceDeadlineTick < 0) {
+			if (!enabled) return;
+
+			// 🔥 Run delayed recheck here
+			if (pendingRecheck) {
+				pendingRecheck = false;
+				updateGracePeriodState(server, "player disconnect (delayed)");
+			}
+
+			if (graceDeadlineTick < 0) {
 				return;
 			}
 
@@ -107,13 +110,16 @@ public class ConditionalAccess implements ModInitializer {
 			}
 
 			LOGGER.info("Grace period expired with no whitelisted players online. Disconnecting remaining non-whitelisted players");
+
 			server.getPlayerList().getPlayers().stream()
 					.filter(player -> !isWhitelisted(server, player))
 					.toList()
 					.forEach(player -> {
-						LOGGER.info("Disconnecting {} after grace period expired", new NameAndId(player.getGameProfile()).name());
+						LOGGER.info("Disconnecting {} after grace period expired",
+								new NameAndId(player.getGameProfile()).name());
 						player.connection.disconnect(GRACE_PERIOD_DISCONNECT_MESSAGE);
 					});
+
 			graceDeadlineTick = -1;
 		});
 	}
